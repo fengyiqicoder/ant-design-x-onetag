@@ -1,0 +1,229 @@
+From 716dadcdf542c2aa2140e1228756984ad1ba2fbe Mon Sep 17 00:00:00 2001
+From: FengYQ <329650437@qq.com>
+Date: Fri, 13 Nov 2026 15:42:25 +0800
+Subject: [PATCH] docs: add OneTag AI to Model Integration
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_014PXmMsBBZgfrAz8PMnA4Tr
+---
+ packages/x/docs/react/demo/onetag.tsx         | 116 ++++++++++++++++++
+ .../x/docs/react/model-use-onetag.en-US.md    |  38 ++++++
+ .../x/docs/react/model-use-onetag.zh-CN.md    |  38 ++++++
+ 3 files changed, 192 insertions(+)
+ create mode 100644 packages/x/docs/react/demo/onetag.tsx
+ create mode 100644 packages/x/docs/react/model-use-onetag.en-US.md
+ create mode 100644 packages/x/docs/react/model-use-onetag.zh-CN.md
+
+diff --git a/packages/x/docs/react/demo/onetag.tsx b/packages/x/docs/react/demo/onetag.tsx
+new file mode 100644
+index 0000000..d572869
+--- /dev/null
++++ b/packages/x/docs/react/demo/onetag.tsx
+@@ -0,0 +1,116 @@
++import type { BubbleListProps } from '@ant-design/x';
++import { Bubble, Sender } from '@ant-design/x';
++import XMarkdown from '@ant-design/x-markdown';
++import {
++  OpenAIChatProvider,
++  useXChat,
++  type XModelParams,
++  type XModelResponse,
++  XRequest,
++} from '@ant-design/x-sdk';
++import { Flex } from 'antd';
++import React from 'react';
++
++/**
++ * 🔔 请将 API_KEY 替换为您自己的 OneTag AI Key：https://onetagai.com/#get-key
++ * 🔔 Please replace API_KEY with your own OneTag AI key: https://onetagai.com/#get-key
++ * 该 Key 按公开使用设计，可以写在浏览器代码中
++ * The key is designed to be public, so it can stay in browser code
++ */
++const API_KEY = 'YOUR_ONETAG_KEY';
++
++const BASE_URL = 'https://onetagai.com/v1/chat/completions';
++
++const role: BubbleListProps['role'] = {
++  assistant: {
++    placement: 'start',
++    contentRender: (content: string) => <XMarkdown content={content} />,
++  },
++  user: {
++    placement: 'end',
++  },
++};
++
++const App = () => {
++  const [content, setContent] = React.useState('');
++  const [provider] = React.useState(
++    new OpenAIChatProvider({
++      request: XRequest<XModelParams, XModelResponse>(BASE_URL, {
++        manual: true,
++        headers: {
++          Authorization: `Bearer ${API_KEY}`,
++        },
++        params: {
++          // 任意模型名都可以，返回中始终为 "onetag"
++          // Any model name is accepted, the answer always says "onetag"
++          model: 'onetag',
++          stream: true,
++          max_tokens: 1000,
++        },
++        middlewares: {
++          // 展示 OneTag 返回的失败原因（Key 错误、域名不允许、token 用完），而不只是 HTTP 状态码
++          // Show the reason OneTag gives (wrong key, domain not allowed, tokens used up)
++          // instead of only the HTTP status
++          onResponse: async (response) => {
++            if (!response.ok) {
++              const data = await response.json().catch(() => null);
++              throw new Error(
++                data?.error?.message || `Request failed with status ${response.status}`,
++              );
++            }
++            return response;
++          },
++        },
++      }),
++    }),
++  );
++
++  const { onRequest, messages, isRequesting, abort } = useXChat({
++    provider,
++    requestPlaceholder: () => ({
++      content: 'Please wait...',
++      role: 'assistant',
++    }),
++    requestFallback: (_, { error, messageInfo }) => {
++      if (error.name === 'AbortError') {
++        return {
++          content: messageInfo?.message?.content || 'Request is aborted',
++          role: 'assistant',
++        };
++      }
++      return {
++        content: error.message,
++        role: 'assistant',
++      };
++    },
++  });
++
++  return (
++    <Flex vertical gap="middle">
++      <Bubble.List
++        style={{ height: 400 }}
++        role={role}
++        items={messages.map(({ id, message, status }) => ({
++          key: id,
++          role: message.role,
++          content: message.content,
++          loading: status === 'loading',
++        }))}
++      />
++      <Sender
++        loading={isRequesting}
++        value={content}
++        onCancel={abort}
++        onChange={setContent}
++        onSubmit={(nextContent) => {
++          onRequest({
++            messages: [{ role: 'user', content: nextContent }],
++          });
++          setContent('');
++        }}
++      />
++    </Flex>
++  );
++};
++
++export default App;
+diff --git a/packages/x/docs/react/model-use-onetag.en-US.md b/packages/x/docs/react/model-use-onetag.en-US.md
+new file mode 100644
+index 0000000..de2408f
+--- /dev/null
++++ b/packages/x/docs/react/model-use-onetag.en-US.md
+@@ -0,0 +1,38 @@
++---
++group:
++  title: Model Integration
++  order: 1
++title: OneTag AI
++order: 2
++---
++
++This guide shows how to call a model straight from the browser, with no server of your own, using [OneTag AI](https://onetagai.com) and Ant Design X.
++
++Most model keys must stay on a server, because anyone can read a key that is in page code. A OneTag AI key is designed to be public: it can stay in the browser code of a static site. Each key has a hard token limit, and on the paid plan it can be locked to your domain. OneTag AI is a paid service with a free plan.
++
++OneTag AI supports the "OpenAI compatible mode" chat completions API, so `OpenAIChatProvider` and `XRequest` work without changes. The only things to set are the URL and the key.
++
++### Related Parameter Acquisition
++
++- baseURL - `https://onetagai.com/v1/chat/completions`
++- How to get an API Key - enter your email at <https://onetagai.com/#get-key> and the key is sent to you. No card is needed. The free plan is 1,000,000 tokens, one time, with no monthly reset.
++- Model - one model, `onetag`. Any model name in the request is accepted.
++- API reference - <https://onetagai.com/docs#openai>
++
++### What works and what does not
++
++| Works | Does not work |
++| --- | --- |
++| Streaming and non-streaming chat completions | Tool calling (`tools`), images, audio and files: text only |
++| `max_tokens`, `temperature`, `response_format: { type: 'json_object' }` | `json_schema` response format, `n` > 1, the Responses API |
++| Calls from browser pages and browser extensions | Calls from a server, SSR, route handlers or Node scripts: requests without an `Origin` header are refused |
++
++The last row is on purpose: it keeps a public key from being used as a backend key. If your app calls the model from a server, use another provider.
++
++## Integrate with X SDK
++
++Pass the key in the `Authorization` header. The `onResponse` middleware is optional: it shows the reason OneTag AI gives when a call is refused (wrong key, key not allowed on this domain, tokens used up) instead of only the HTTP status.
++
++### Example
++
++<code src="./demo/onetag.tsx" title="Integrate with X SDK" description="Replace YOUR_ONETAG_KEY with your own key before you try this example."></code>
+diff --git a/packages/x/docs/react/model-use-onetag.zh-CN.md b/packages/x/docs/react/model-use-onetag.zh-CN.md
+new file mode 100644
+index 0000000..8898973
+--- /dev/null
++++ b/packages/x/docs/react/model-use-onetag.zh-CN.md
+@@ -0,0 +1,38 @@
++---
++group:
++  title: 模型接入
++  order: 1
++title: OneTag AI
++order: 2
++---
++
++这篇指南将介绍如何借助 [OneTag AI](https://onetagai.com) 和 Ant Design X，在浏览器里直接调用模型，不需要自己的服务端。
++
++大多数模型的 Key 只能放在服务端，因为写在页面代码里的 Key 谁都能看到。OneTag AI 的 Key 本身就是按公开使用设计的：可以直接写在静态站点的浏览器代码里。每个 Key 都有硬性的 token 上限，付费版还可以把 Key 锁定到你的域名。OneTag AI 是付费服务，提供免费额度。
++
++OneTag AI 支持「兼容 OpenAI 模式」的 chat completions 接口，因此 `OpenAIChatProvider` 和 `XRequest` 无需改动即可使用，只需要设置地址和 Key。
++
++### 相关参数获取
++
++- baseURL - `https://onetagai.com/v1/chat/completions`
++- 如何获取 API Key - 在 <https://onetagai.com/#get-key> 填写邮箱，Key 会发送到你的邮箱，无需绑卡。免费额度为 1,000,000 tokens，一次性发放，不按月重置。
++- 模型 - 只有一个模型 `onetag`，请求中填写任意模型名都可以。
++- 接口文档 - <https://onetagai.com/docs#openai>
++
++### 支持与不支持
++
++| 支持 | 不支持 |
++| --- | --- |
++| 流式和非流式的 chat completions | 工具调用（`tools`）、图片、音频和文件：仅支持文本 |
++| `max_tokens`、`temperature`、`response_format: { type: 'json_object' }` | `json_schema` 格式、`n` > 1、Responses API |
++| 从浏览器页面和浏览器扩展发起的请求 | 从服务端、SSR、路由处理函数或 Node 脚本发起的请求：没有 `Origin` 请求头的请求会被拒绝 |
++
++最后一行是有意为之：这样公开的 Key 不能被当作后端 Key 使用。如果你的应用需要在服务端调用模型，请选择其他服务。
++
++## 使用 X SDK 接入
++
++通过 `Authorization` 请求头传入 Key。`onResponse` 中间件是可选的：当请求被拒绝时（Key 错误、Key 不允许在当前域名使用、token 用完），它会展示 OneTag AI 返回的原因，而不只是 HTTP 状态码。
++
++### 示例
++
++<code src="./demo/onetag.tsx" title="使用 X SDK 接入" description="请先将 YOUR_ONETAG_KEY 替换为你自己的 Key 再试用此示例。"></code>
+-- 
+2.25.0
+

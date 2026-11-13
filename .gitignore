@@ -2,3 +2,6 @@ node_modules
 dist
 *.png
 .env
+upstream/REPORT.md
+upstream/issue-body.md
+upstream/pr-body.md

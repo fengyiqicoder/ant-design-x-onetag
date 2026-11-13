@@ -54,7 +54,9 @@ const App = () => {
           onResponse: async (response) => {
             if (!response.ok) {
               const data = await response.json().catch(() => null);
-              throw new Error(data?.error?.message || `Request failed with status ${response.status}`);
+              throw new Error(
+                data?.error?.message || `Request failed with status ${response.status}`,
+              );
             }
             return response;
           },
