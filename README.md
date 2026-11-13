@@ -42,7 +42,7 @@ A full example is [`upstream/files/onetag.tsx`](upstream/files/onetag.tsx).
 Enter your email at [onetagai.com](https://onetagai.com/#get-key) and the key is sent to you.
 No card is needed. The free plan is 1,000,000 tokens, one time, with no monthly reset.
 
-On `localhost` this demo uses a shared demo key, which does not answer on a live site. Elsewhere,
+On `localhost` this demo uses a shared demo key with a small daily budget shared by everyone, so use your own key on a live site. Elsewhere,
 without a key built in, the page asks for one.
 
 ## What works
