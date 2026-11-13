@@ -1,0 +1,38 @@
+name: Publish the demo
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      # The repository keeps a placeholder. The published pages get their key from the
+      # ONETAG_KEY secret. The key is public by design and ends up in the page like an
+      # analytics ID; the secret only keeps it out of the repository history.
+      - run: sh scripts/build-site.sh dist
+        env:
+          ONETAG_KEY: ${{ secrets.ONETAG_KEY }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/deploy-pages@v4
+        id: deployment

@@ -1,0 +1,32 @@
+{
+  "name": "ant-design-x-onetag-demo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ant Design X chat (Bubble.List, Sender, x-sdk) answered by OneTag AI straight from the browser. No server.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5180",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 5181",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ant-design/x": "^2.10.0",
+    "@ant-design/x-markdown": "^2.10.0",
+    "@ant-design/x-sdk": "^2.10.0",
+    "antd": "^6.7.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "5.9",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
